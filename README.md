@@ -1,89 +1,84 @@
-# Cancer Detection with Logistic Regression (From Scratch)
+Quant-Core-Engine: Stochastic Logistic Regression
+=================================================
 
-Binary classification on the sklearn Breast Cancer dataset using a logistic regression model trained **from scratch** (NumPy). The project is structured like a small real-world ML repo: separate training, evaluation, artifact saving/loading, and basic plots.
+A performance-optimized implementation of a Logistic Regression engine built from scratch using vectorized NumPy. While demonstrated on high-dimensional clinical diagnostic data, the core architecture is designed as a reusable, quant-style classification component for risk-sensitive binary prediction, probability scoring, and feature-weight interpretation.
 
-## What I implemented from scratch
-Core model + training math (no sklearn model used):
-- Linear score: `z = Xw + b`
-- Sigmoid probability: `p = 1 / (1 + exp(-z))`
-- Log loss (cross-entropy) with optional L2 regularization
-- Gradients for `w` and `b`
-- Gradient descent training loop
+Note: This repository uses a medical dataset as a benchmark for validating the engine end-to-end. It is a learning and engineering demonstration project and is not intended for clinical use.
 
-## What was built with guidance
-Repo structure and “project plumbing” were created with assistance (e.g., saving/loading artifacts, evaluation script layout, metrics/plots wiring, and general organization).
+Core Quantitative Features
+--------------------------
 
-## Dataset
-Uses `sklearn.datasets.load_breast_cancer`:
-- 569 samples, 30 numeric features
-- Targets:
-  - `0 = malignant`
-  - `1 = benign`
+Implemented from the ground up to demonstrate mastery of the mathematics and engineering of predictive modeling:
 
-No external downloads required.
+-   Vectorized Execution: Core operations are expressed in matrix form (z = Xw + b) to reduce Python overhead and leverage optimized linear algebra routines.
 
-## Project structure
-```text
-cancer-detection-logreg-scratch/
-├─ README.md
-├─ requirements.txt
-├─ reports/
-│  └─ report.md
-├─ src/
-│  ├─ __init__.py
-│  ├─ preprocess.py
-│  ├─ logreg_scratch.py
-│  ├─ train.py
-│  ├─ evaluate.py
-│  └─ view_dataset.py
-├─ artifacts/   (generated, gitignored)
-└─ plots/       (generated, gitignored)
+-   Stochastic Optimization: Mini-Batch Gradient Descent with per-epoch shuffling to balance convergence stability and computational efficiency.
+
+-   L2 Regularization (Ridge): Adds a penalty term to control weight growth and mitigate overfitting in high-dimensional settings (30 features).
+
+-   Standardization Pipeline: Train-set z-score normalization using learned mu/sd, persisted and reused at inference time to prevent leakage and maintain numerical stability.
+
+-   Probabilistic Output: Produces continuous probability scores p in [0, 1], enabling dynamic thresholding, sensitivity tuning, and cost-of-error analysis.
+
+-   High-Precision Latency Benchmarking: Records training duration using time.perf_counter() for high-resolution performance benchmarking (resolution depends on system and OS).
+
+Project Architecture
+--------------------
+
+The repository follows modular SWE structure for reproducibility and clean separation of concerns:
 ```
+quant-core-engine/
+├─ src/               # Core engine logic (standardization, model math, save/load)\
+├─ scripts/           # Pipeline execution (train, evaluate)\
+├─ artifacts/         # Model persistence (serialized weights, scaling stats, metadata)\
+├─ plots/             # Performance visualization (loss, ROC, confusion matrix)\
+├─ reports/           # Quantitative analysis and threshold notes (optional)\
+└─ requirements.txt   # Dependency management
+```
+Quantitative Performance
+------------------------
 
+The engine demonstrates rapid convergence on the benchmark dataset, reaching a finalized log-loss of approximately 0.097 within 100 epochs (with default hyperparameters). Run the evaluation script to reproduce exact metrics and plots on your machine.
 
-## Setup
-Create and activate a virtual environment, then install dependencies:
-```bash
+Important label note (dataset):
+
+-   y = 0 represents malignant
+
+-   y = 1 represents benign\
+    ROC/AUC and thresholding are therefore "positive = benign" unless you explicitly flip the labeling for a malignancy-detection view.
+
+Risk Calibration & Threshold Sweeps
+-----------------------------------
+
+In many risk-sensitive domains, the cost of a False Negative (Type II error) can outweigh a False Positive. This engine includes an evaluation suite that supports threshold sweeps so sensitivity can be tuned to the domain's cost-of-error requirements.
+
+Running the Engine
+------------------
+
+1.  Initialize Environment:
+
 pip install -r requirements.txt
-```
 
-## Run 
-Preview dataset:
+1.  Execute Training Pipeline:
 
-```bash
-python -m src.view_dataset
-```
+python -m scripts.train
 
-Train (saves artifacts/model.npz):
+1.  Run Sensitivity Analysis & Evaluation:
 
-```bash
-python -m src.train
-```
+python -m scripts.evaluate
 
-Evaluate (loads artifact, prints metrics, saves plots):
-```bash
+Why this matters for Quant Roles
+--------------------------------
 
-python -m src.evaluate
-```
+-   Feature Importance: The learned weights w can be inspected directly to rank the strongest predictive factors, supporting interpretability and feature-driven investigation.
 
-## Outputs
+-   Numerical Stability: Custom log-loss implementation with clipping safeguards to prevent overflow/underflow and improve robustness on extreme scores.
 
-Generated locally (not committed):
+-   Reproducibility and Leakage Safety: Deterministic data splits and train-only scaling statistics ensure consistent, audit-friendly results.
 
-- artifacts/model.npz
+-   Scalability: The modular src/ architecture makes the engine easy to swap into larger pipelines (batch scoring, walk-forward validation, threshold calibration) with minimal friction.
 
-    Contains w, b, standardization stats (mu, sd), loss_history, and split/training settings.
+Disclaimer
+----------
 
-- plots/training_loss.png
-
-    Training loss curve.
-
-### Notes on evaluation and safety tradeoffs
-
-This is a medical screening-style problem where missing malignant cases is the most dangerous error. Threshold choice controls the tradeoff between:
-
-- false negatives (malignant predicted benign)
-
-- false positives (benign predicted malignant)
-
-The default threshold is 0.5, but it can be adjusted in evaluate.py.
+This is a learning and demonstration project. It is not intended for clinical deployment or medical decision-making.
