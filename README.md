@@ -1,84 +1,154 @@
-Quant-Core-Engine: Stochastic Logistic Regression
-=================================================
+Logistic Regression From Scratch (NumPy)
+========================================
 
-A performance-optimized implementation of a Logistic Regression engine built from scratch using vectorized NumPy. While demonstrated on high-dimensional clinical diagnostic data, the core architecture is designed as a reusable, quant-style classification component for risk-sensitive binary prediction, probability scoring, and feature-weight interpretation.
+A clean, from-scratch implementation of logistic regression using vectorized NumPy. The project demonstrates the full pipeline for binary classification: preprocessing, training with mini-batch gradient descent, evaluation, and reproducible artifact generation. The implementation is validated on a 30-feature diagnostic dataset to illustrate end-to-end performance and convergence behavior.
 
-Note: This repository uses a medical dataset as a benchmark for validating the engine end-to-end. It is a learning and engineering demonstration project and is not intended for clinical use.
+Note: The dataset is used only as a benchmark to validate the implementation. This repository is a learning and engineering project and is not intended for clinical use.
 
-Core Quantitative Features
---------------------------
+Core Features
+-------------
 
-Implemented from the ground up to demonstrate mastery of the mathematics and engineering of predictive modeling:
+Implemented from first principles to demonstrate understanding of both the mathematics and engineering of probabilistic classification:
 
--   Vectorized Execution: Core operations are expressed in matrix form (z = Xw + b) to reduce Python overhead and leverage optimized linear algebra routines.
+-   Vectorized Computation\
+    Model operations are expressed in matrix form (z = Xw + b) to avoid Python loops and leverage optimized linear algebra routines.
 
--   Stochastic Optimization: Mini-Batch Gradient Descent with per-epoch shuffling to balance convergence stability and computational efficiency.
+-   Mini-Batch Gradient Descent\
+    Stochastic optimization with per-epoch shuffling to balance convergence stability and computational efficiency.
 
--   L2 Regularization (Ridge): Adds a penalty term to control weight growth and mitigate overfitting in high-dimensional settings (30 features).
+-   Binary Cross-Entropy Loss\
+    Negative log-likelihood objective with numerically stable clipping to prevent log(0).
 
--   Standardization Pipeline: Train-set z-score normalization using learned mu/sd, persisted and reused at inference time to prevent leakage and maintain numerical stability.
+-   L2 Regularization (Ridge)\
+    Penalizes large weights to improve generalization and reduce overfitting in higher-dimensional feature spaces.
 
--   Probabilistic Output: Produces continuous probability scores p in [0, 1], enabling dynamic thresholding, sensitivity tuning, and cost-of-error analysis.
+-   Standardization Pipeline\
+    Train-set z-score normalization using learned mean and standard deviation, persisted and reused at inference time to prevent data leakage.
 
--   High-Precision Latency Benchmarking: Records training duration using time.perf_counter() for high-resolution performance benchmarking (resolution depends on system and OS).
+-   Probabilistic Output\
+    Produces calibrated probabilities p in [0, 1], enabling threshold tuning and sensitivity/precision trade-off analysis.
 
-Project Architecture
---------------------
+-   Reproducibility\
+    Deterministic data splits, fixed seeds, and saved preprocessing statistics ensure results can be reproduced exactly.
 
-The repository follows modular SWE structure for reproducibility and clean separation of concerns:
+Project Structure
+-----------------
+
+The repository follows a modular structure to separate concerns and support reproducibility:
+
 ```
-quant-core-engine/
-├─ src/               # Core engine logic (standardization, model math, save/load)\
-├─ scripts/           # Pipeline execution (train, evaluate)\
-├─ artifacts/         # Model persistence (serialized weights, scaling stats, metadata)\
-├─ plots/             # Performance visualization (loss, ROC, confusion matrix)\
-├─ reports/           # Quantitative analysis and threshold notes (optional)\
-└─ requirements.txt   # Dependency management
+logistic-regression-from-scratch/
+├─ src/               # Core model, preprocessing, utilities
+├─ scripts/           # Training and evaluation entry points
+├─ artifacts/         # Saved model parameters and metadata
+├─ plots/             # Generated figures (loss curves, ROC, confusion matrix)
+├─ reports/           # Analysis notes and experiment summaries (optional)
+└─ requirements.txt   # Dependencies
+
 ```
-Quantitative Performance
-------------------------
 
-The engine demonstrates rapid convergence on the benchmark dataset, reaching a finalized log-loss of approximately 0.097 within 100 epochs (with default hyperparameters). Run the evaluation script to reproduce exact metrics and plots on your machine.
+Model Overview
+--------------
 
-Important label note (dataset):
+Logistic regression models the probability of the positive class as:
+
+p = sigmoid(Xw + b)
+
+where:
+
+-   w = learned weights
+
+-   b = bias term
+
+-   sigmoid(z) = 1 / (1 + exp(-z))
+
+The objective minimized during training is the regularized binary cross-entropy:
+
+J(w, b) = -(1/m) * sum[ y log(p) + (1 - y) log(1 - p) ] + (lambda/2) * ||w||^2
+
+where m is the batch size and lambda controls the L2 penalty strength.
+
+Performance
+-----------
+
+The model converges rapidly on the benchmark dataset, reaching a final log-loss of approximately 0.097 within 100 epochs using default hyperparameters. Exact metrics and plots can be reproduced by running the evaluation script.
+
+Runtime is hardware-dependent, but vectorized NumPy operations keep training efficient for moderate-sized tabular datasets.
+
+Dataset Label Note
+------------------
+
+For the benchmark dataset:
 
 -   y = 0 represents malignant
 
--   y = 1 represents benign\
-    ROC/AUC and thresholding are therefore "positive = benign" unless you explicitly flip the labeling for a malignancy-detection view.
+-   y = 1 represents benign
 
-Risk Calibration & Threshold Sweeps
------------------------------------
+Evaluation metrics treat class "1" as the positive class unless labels are flipped during analysis.
 
-In many risk-sensitive domains, the cost of a False Negative (Type II error) can outweigh a False Positive. This engine includes an evaluation suite that supports threshold sweeps so sensitivity can be tuned to the domain's cost-of-error requirements.
-
-Running the Engine
+Threshold Analysis
 ------------------
 
-1.  Initialize Environment:
+Different applications require different error trade-offs. The evaluation pipeline supports threshold sweeps so sensitivity, specificity, precision, and recall can be analyzed across operating points.
 
+This is useful for understanding:
+
+-   false positive vs false negative trade-offs
+
+-   model calibration behavior
+
+-   decision boundary sensitivity
+
+Running the Project
+-------------------
+
+Install dependencies:
+
+```bash
 pip install -r requirements.txt
+```
 
-1.  Execute Training Pipeline:
-
+Train the model:
+```bash
 python -m scripts.train
-
-1.  Run Sensitivity Analysis & Evaluation:
-
+```
+Evaluate and generate plots:
+```bash
 python -m scripts.evaluate
+```
+Artifacts
+---------
 
-Why this matters for Quant Roles
---------------------------------
+The training process produces a compressed NumPy artifact containing:
 
--   Feature Importance: The learned weights w can be inspected directly to rank the strongest predictive factors, supporting interpretability and feature-driven investigation.
+-   learned weights and bias
 
--   Numerical Stability: Custom log-loss implementation with clipping safeguards to prevent overflow/underflow and improve robustness on extreme scores.
+-   preprocessing statistics (mean and standard deviation)
 
--   Reproducibility and Leakage Safety: Deterministic data splits and train-only scaling statistics ensure consistent, audit-friendly results.
+-   hyperparameters
 
--   Scalability: The modular src/ architecture makes the engine easy to swap into larger pipelines (batch scoring, walk-forward validation, threshold calibration) with minimal friction.
+-   loss history
+
+-   runtime metadata
+
+These artifacts enable deterministic reproduction of results and consistent inference on new data.
+
+Why This Project Matters
+------------------------
+
+This repository demonstrates:
+
+-   understanding of probabilistic modeling fundamentals
+
+-   implementation of gradient-based optimization from scratch
+
+-   awareness of data leakage and preprocessing correctness
+
+-   reproducible experiment structure
+
+-   clean software organization for ML workflows
 
 Disclaimer
 ----------
 
-This is a learning and demonstration project. It is not intended for clinical deployment or medical decision-making.
+This project is for educational and demonstration purposes only. It is not intended for medical or production deployment.
